@@ -1,4 +1,4 @@
 package com.github.lemongrab32.repository.specification;
 
-public record SearchCriteria(String key, String operation, Object value) {
+public record SearchCriteria(String key, Operation operation, Object value) {
 }

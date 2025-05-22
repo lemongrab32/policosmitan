@@ -4,9 +4,11 @@ import com.github.lemongrab32.model.Article;
 import com.github.lemongrab32.model.dto.ArticleRequest;
 import com.github.lemongrab32.model.dto.ArticleResponse;
 import com.github.lemongrab32.repository.ArticleRepository;
+import com.github.lemongrab32.repository.specification.ArticleSpecification;
+import com.github.lemongrab32.repository.specification.Operation;
+import com.github.lemongrab32.repository.specification.SearchCriteria;
 import com.github.lemongrab32.service.ArticleService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ReflectionUtils;
 
@@ -14,6 +16,8 @@ import java.lang.reflect.Field;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -26,8 +30,26 @@ public class ArticleServiceImpl implements ArticleService {
         return mapToResponses(articleRepository.findAll());
     }
 
-    public List<ArticleResponse> getArticles(Specification<Article> spec) {
-        return mapToResponses(articleRepository.findAll(spec));
+    @Override
+    public List<ArticleResponse> getArticles(String search) {
+        String[] conditions = search.split(",");
+        ArticleSpecification specification = new ArticleSpecification();
+        for (String condition : conditions) {
+            condition = condition.trim();
+            Pattern regex = Pattern.compile("([A-Za-z]+)(: | < | <= | > | >= | =)(\\w+)");
+            Matcher matcher = regex.matcher(condition);
+            while (matcher.find()) {
+                specification.and(new ArticleSpecification(
+                        mapToCriteria(matcher.group(1), matcher.group(2), matcher.group(3))
+                ));
+            }
+        }
+
+        if (specification.getCriteria() == null) {
+            return List.of();
+        }
+
+        return mapToResponses(articleRepository.findAll(specification));
     }
 
     @Override
@@ -87,5 +109,30 @@ public class ArticleServiceImpl implements ArticleService {
                         article.getShortDescription(),
                         article.getAuthor(), article.getContent()
                 )).toList();
+    }
+
+    private SearchCriteria mapToCriteria(String field, String operation, String value) {
+        switch (operation) {
+            case ":" -> {
+                return new SearchCriteria(field, Operation.LIKE, value);
+            }
+            case "<" -> {
+                return new SearchCriteria(field, Operation.LT, value);
+            }
+            case "<=" -> {
+                return new SearchCriteria(field, Operation.LE, value);
+            }
+            case ">" -> {
+                return new SearchCriteria(field, Operation.GT, value);
+            }
+            case ">=" -> {
+                return new SearchCriteria(field, Operation.GE, value);
+            }
+            case "=" -> {
+                return new SearchCriteria(field, Operation.EQ, value);
+            }
+        }
+
+        return null;
     }
 }
