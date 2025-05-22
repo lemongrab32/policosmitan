@@ -6,10 +6,12 @@ import com.github.lemongrab32.model.dto.ArticleResponse;
 import com.github.lemongrab32.repository.ArticleRepository;
 import com.github.lemongrab32.service.ArticleService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -21,13 +23,11 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public List<ArticleResponse> getArticles() {
-        return articleRepository.findAll()
-                .stream()
-                .map(article -> new ArticleResponse(
-                        article.getId(), article.getTitle(),
-                        article.getShortDescription(),
-                        article.getAuthor(), article.getContent()
-                )).toList();
+        return mapToResponses(articleRepository.findAll());
+    }
+
+    public List<ArticleResponse> getArticles(Specification<Article> spec) {
+        return mapToResponses(articleRepository.findAll(spec));
     }
 
     @Override
@@ -50,6 +50,7 @@ public class ArticleServiceImpl implements ArticleService {
                 .shortDescription(request.shortDescription())
                 .author(request.author())
                 .content(request.content())
+                .publishingDate(new Date())
                 .build();
 
         articleRepository.save(article);
@@ -77,5 +78,14 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public void deleteArticle(long id) {
         articleRepository.deleteById(id);
+    }
+
+    private List<ArticleResponse> mapToResponses(List<Article> articles) {
+        return articles.stream()
+                .map(article -> new ArticleResponse(
+                        article.getId(), article.getTitle(),
+                        article.getShortDescription(),
+                        article.getAuthor(), article.getContent()
+                )).toList();
     }
 }

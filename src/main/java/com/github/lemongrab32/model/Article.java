@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
+import java.util.Set;
+
 @Entity
 @Table(name = "articles")
 @Builder
@@ -23,5 +26,8 @@ public class Article {
     private String shortDescription;
     private String author;
     private String content;
+    @Column(name = "publishing_date")
+    private Date publishingDate;
+    private Set<String> tags;
 
 }

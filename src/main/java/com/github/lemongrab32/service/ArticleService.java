@@ -1,7 +1,9 @@
 package com.github.lemongrab32.service;
 
+import com.github.lemongrab32.model.Article;
 import com.github.lemongrab32.model.dto.ArticleRequest;
 import com.github.lemongrab32.model.dto.ArticleResponse;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Map;
@@ -13,6 +15,12 @@ public interface ArticleService {
      * @return список всех имеющихся в базе статей
      */
     List<ArticleResponse> getArticles();
+
+    /**
+     * Возвращает все сохранённые статьи c применением указанных фильтров
+     * @return список всех имеющихся в базе статей, соответствующих критериям фильтрации
+     */
+    List<ArticleResponse> getArticles(Specification<Article> spec);
 
     /**
      * Ищет статью по её id
