@@ -28,6 +28,8 @@ public class Article {
     private String content;
     @Column(name = "publishing_date")
     private Date publishingDate;
+
+    @ElementCollection
     private Set<String> tags;
 
 }

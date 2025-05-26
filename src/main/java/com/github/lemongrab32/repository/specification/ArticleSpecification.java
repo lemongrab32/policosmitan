@@ -42,6 +42,14 @@ public class ArticleSpecification implements Specification<Article> {
 
         switch (operation) {
             case EQ -> {
+                if ("tags".equals(this.criteria.key())) {
+                    String[] tags = value.split(",");
+                    Predicate predicate = criteriaBuilder.isMember(tags[0], root.get("tags"));
+                    for (int i = 1; i < tags.length; i++) {
+                        predicate = criteriaBuilder.or(predicate, criteriaBuilder.isMember(tags[i], root.get("tags")));
+                    }
+                    return predicate;
+                }
                 return criteriaBuilder.equal(expression, value);
             }
             case LIKE -> {

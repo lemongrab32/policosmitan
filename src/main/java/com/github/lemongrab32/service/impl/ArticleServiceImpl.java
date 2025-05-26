@@ -9,6 +9,7 @@ import com.github.lemongrab32.repository.specification.Operation;
 import com.github.lemongrab32.repository.specification.SearchCriteria;
 import com.github.lemongrab32.service.ArticleService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ReflectionUtils;
 
@@ -32,17 +33,35 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public List<ArticleResponse> getArticles(String search) {
-        String[] conditions = search.split(",");
+        String[] conditions = search.split(";");
         ArticleSpecification specification = new ArticleSpecification();
-        for (String condition : conditions) {
-            condition = condition.trim();
-            Pattern regex = Pattern.compile("([A-Za-z]+)(: | < | <= | > | >= | =)(\\w+)");
-            Matcher matcher = regex.matcher(condition);
-            while (matcher.find()) {
-                specification.and(new ArticleSpecification(
-                        mapToCriteria(matcher.group(1), matcher.group(2), matcher.group(3))
-                ));
+        int count = 0;
+
+        Pattern regex = Pattern.compile("([A-Za-z]+)(:|<|<=|>|>=|=)(.+)");
+        Matcher matcher = regex.matcher(conditions[count++]);
+
+        if (matcher.find()) {
+            specification = (ArticleSpecification) Specification.where(
+                    new ArticleSpecification(
+                            mapToCriteria(matcher.group(1), matcher.group(2), matcher.group(3))
+                    )
+            );
+            if (count == conditions.length) {
+                return mapToResponses(articleRepository.findAll(specification));
+            } else {
+                matcher = regex.matcher(conditions[count++]);
             }
+        }
+
+        while (matcher.find()) {
+            if (count == conditions.length) {
+                return mapToResponses(articleRepository.findAll(specification));
+            }
+
+            specification.and(new ArticleSpecification(
+                    mapToCriteria(matcher.group(1), matcher.group(2), matcher.group(3))
+            ));
+            matcher = regex.matcher(conditions[count++]);
         }
 
         if (specification.getCriteria() == null) {
@@ -61,7 +80,8 @@ public class ArticleServiceImpl implements ArticleService {
                 article.getTitle(),
                 article.getShortDescription(),
                 article.getAuthor(),
-                article.getContent()
+                article.getContent(),
+                article.getTags()
         );
     }
 
@@ -73,6 +93,7 @@ public class ArticleServiceImpl implements ArticleService {
                 .author(request.author())
                 .content(request.content())
                 .publishingDate(new Date())
+                .tags(request.tags())
                 .build();
 
         articleRepository.save(article);
@@ -107,7 +128,8 @@ public class ArticleServiceImpl implements ArticleService {
                 .map(article -> new ArticleResponse(
                         article.getId(), article.getTitle(),
                         article.getShortDescription(),
-                        article.getAuthor(), article.getContent()
+                        article.getAuthor(), article.getContent(),
+                        article.getTags()
                 )).toList();
     }
 
