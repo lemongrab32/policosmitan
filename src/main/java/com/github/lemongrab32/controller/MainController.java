@@ -48,7 +48,7 @@ public class MainController {
     public ResponseEntity<?> createArticle(@RequestBody @Valid ArticleRequest request) {
         articleService.saveArticle(request);
 
-        return ResponseEntity.ok("Статья успешно добавлена");
+        return ResponseEntity.status(HttpStatus.CREATED).body("Статья успешно добавлена");
     }
 
     @PatchMapping("/{id}")

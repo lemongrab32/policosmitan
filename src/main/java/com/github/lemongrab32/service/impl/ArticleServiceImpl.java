@@ -33,19 +33,27 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public List<ArticleResponse> getArticles(String search) {
-        String[] conditions = search.split(";");
+        String[] conditions = search.split(";"); // Критерии фильтрации разделяются знаком ";"
         ArticleSpecification specification = new ArticleSpecification();
-        int count = 0;
+        int count = 0; // Счётчик для прохода по критериям
 
+        /*
+            Формат ввода критериев поиска:
+            [название поля]<оператор сравнения>[искомое значение]
+         */
         Pattern regex = Pattern.compile("([A-Za-z]+)(:|<|<=|>|>=|=)(.+)");
-        Matcher matcher = regex.matcher(conditions[count++]);
+        Matcher matcher = regex.matcher(conditions[count++]); // Матчер для первого критерия
 
+        // Если совпадение найдено, то добавляем в спецификацию критерий
         if (matcher.find()) {
             specification = (ArticleSpecification) Specification.where(
                     new ArticleSpecification(
                             mapToCriteria(matcher.group(1), matcher.group(2), matcher.group(3))
                     )
             );
+
+            // Обновляем значение матчера на следующий критерий, если не достигли конца массива,
+            // иначе ищем данные со сформированной спецификацией
             if (count == conditions.length) {
                 return mapToResponses(articleRepository.findAll(specification));
             } else {
@@ -53,6 +61,7 @@ public class ArticleServiceImpl implements ArticleService {
             }
         }
 
+        // Обработка остальных критериев
         while (matcher.find()) {
             if (count == conditions.length) {
                 return mapToResponses(articleRepository.findAll(specification));
@@ -81,6 +90,7 @@ public class ArticleServiceImpl implements ArticleService {
                 article.getShortDescription(),
                 article.getAuthor(),
                 article.getContent(),
+                article.getPublishingDate(),
                 article.getTags()
         );
     }
@@ -107,7 +117,7 @@ public class ArticleServiceImpl implements ArticleService {
                 );
 
         updates.forEach((key, value) -> {
-            Field field = ReflectionUtils.findField(article.getClass(), key);
+            Field field = ReflectionUtils.findField(article.getClass(), key); // Получаем поле, значение которого нужно обновить
 
             if (field != null) {
                 ReflectionUtils.makeAccessible(field);
@@ -123,16 +133,29 @@ public class ArticleServiceImpl implements ArticleService {
         articleRepository.deleteById(id);
     }
 
+    /**
+     * Преобразует объекты из базы в DTO
+     * @param articles найденные в базе объекты статей
+     * @return Список преобразованных в DTO статей
+     */
     private List<ArticleResponse> mapToResponses(List<Article> articles) {
         return articles.stream()
                 .map(article -> new ArticleResponse(
                         article.getId(), article.getTitle(),
                         article.getShortDescription(),
                         article.getAuthor(), article.getContent(),
+                        article.getPublishingDate(),
                         article.getTags()
                 )).toList();
     }
 
+    /**
+     * Преобразует значение операторов критерия поиска к соответствующим значениям enum Operation
+     * @param field поле, по которому осуществляется фильтрация
+     * @param operation оператор сравнения
+     * @param value искомое значение
+     * @return Сформированный объект критерия поиска
+     */
     private SearchCriteria mapToCriteria(String field, String operation, String value) {
         switch (operation) {
             case ":" -> {

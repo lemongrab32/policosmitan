@@ -1,5 +1,6 @@
 package com.github.lemongrab32.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,13 +24,15 @@ public class Article {
 
     private String title;
     @Column(name = "short_description")
+    @JsonProperty("short_description")
     private String shortDescription;
     private String author;
     private String content;
     @Column(name = "publishing_date")
+    @JsonProperty("publishing_date")
     private Date publishingDate;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private Set<String> tags;
 
 }
